@@ -7,7 +7,6 @@ endif()
 
 # Find dependencies
 find_package(ament_cmake REQUIRED)
-# find_package(PCL REQUIRED COMPONENTS common io)
 find_package(PCL REQUIRED)
 find_package(pcl_conversions REQUIRED)
 find_package(pcl_ros REQUIRED)
@@ -36,11 +35,16 @@ add_executable(dbscan_detection_node src/dbscan_detection_node.cpp)
 ament_target_dependencies(dbscan_detection_node rclcpp sensor_msgs pcl_conversions PCL visualization_msgs)
 target_link_libraries(dbscan_detection_node dbscan_lib)
 
+add_executable(radar_detection_node src/dbscan_detection_node.cpp)
+ament_target_dependencies(radar_detection_node rclcpp sensor_msgs pcl_conversions PCL visualization_msgs)
+target_link_libraries(radar_detection_node dbscan_lib)
+
 # Install targets
 install(TARGETS
   dbscan_node
   dbscan_lib
   dbscan_detection_node
+  radar_detection_node
   DESTINATION lib/${PROJECT_NAME}
 )
 

@@ -25,10 +25,10 @@ class DetectionNode : public rclcpp::Node {
 public:
     DetectionNode() : Node("detection_node") {
         // ROS2 퍼블리셔 및 서브스크라이버 설정
-        pub_clustered_cloud_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/dbscan/lidar/clusters", 1);
-        pub_markers_ = this->create_publisher<visualization_msgs::msg::MarkerArray>("/dbscan/lidar/clusters/bboxes", 1);
+        pub_clustered_cloud_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/dbscan/radar/clusters", 1);
+        pub_markers_ = this->create_publisher<visualization_msgs::msg::MarkerArray>("/dbscan/radar/clusters/bboxes", 1);
         sub_cloud_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
-            "/carla/ego_vehicle/semantic_lidar", 1, std::bind(&DetectionNode::cloudCallback, this, std::placeholders::_1));
+            "/carla/ego_vehicle/radar_front", 1, std::bind(&DetectionNode::cloudCallback, this, std::placeholders::_1));
     }
 
 private:
@@ -54,7 +54,7 @@ private:
 
         visualization_msgs::msg::Marker bbox;
         bbox.header = header;
-        bbox.ns = "dbscan_bounding_" + std::to_string(id);
+        bbox.ns = "radar_bounding_" + std::to_string(id);
         bbox.id = id;
         bbox.type = visualization_msgs::msg::Marker::CUBE;
         bbox.action = visualization_msgs::msg::Marker::ADD;
@@ -94,22 +94,22 @@ private:
         pcl::PointCloud<pcl::PointXYZ>::Ptr cCloud(new pcl::PointCloud<pcl::PointXYZ>());
         pcl::fromROSMsg(*cloudMsg, *cCloud);
 
-        // pcl::PointCloud<pcl::PointXYZ>::Ptr rangeFilteredCloud(new pcl::PointCloud<pcl::PointXYZ>());
-        // filterPointCloud(cCloud, rangeFilteredCloud);
+        pcl::PointCloud<pcl::PointXYZ>::Ptr rangeFilteredCloud(new pcl::PointCloud<pcl::PointXYZ>());
+        filterPointCloud(cCloud, rangeFilteredCloud);
 
-        // pcl::VoxelGrid<pcl::PointXYZ> vg;
-        // vg.setInputCloud(cCloud);
-        // vg.setLeafSize(0.5f, 0.5f, 0.5f);
-        // pcl::PointCloud<pcl::PointXYZ>::Ptr filteredCloud(new pcl::PointCloud<pcl::PointXYZ>());
-        // vg.filter(*filteredCloud);
+        pcl::VoxelGrid<pcl::PointXYZ> vg;
+        vg.setInputCloud(rangeFilteredCloud);
+        vg.setLeafSize(0.5f, 0.5f, 0.5f);
+        pcl::PointCloud<pcl::PointXYZ>::Ptr filteredCloud(new pcl::PointCloud<pcl::PointXYZ>());
+        vg.filter(*filteredCloud);
 
-        // if (filteredCloud->empty()) {
-        //     RCLCPP_WARN(this->get_logger(), "Filtered cloud is empty after PassThrough.");
-        //     return;
-        // }
+        if (filteredCloud->empty()) {
+            RCLCPP_WARN(this->get_logger(), "Filtered cloud is empty after PassThrough.");
+            return;
+        }
 
         pcl::PointCloud<pcl::PointXYZI>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZI>());
-        for (const auto& point : cCloud->points) {
+        for (const auto& point : filteredCloud->points) {
             pcl::PointXYZI cvtCloud;
             cvtCloud.x = point.x;
             cvtCloud.y = point.y;
