@@ -68,7 +68,7 @@ private:
         bbox.color.g = 1.0f;
         bbox.color.b = 0.0f;
         bbox.color.a = 0.5;
-        bbox.text = "Obstacle_" + std::to_string(id);
+        bbox.text = "Lidar_Obstacle_" + std::to_string(id);
         return bbox;
     }
 
@@ -94,22 +94,22 @@ private:
         pcl::PointCloud<pcl::PointXYZ>::Ptr cCloud(new pcl::PointCloud<pcl::PointXYZ>());
         pcl::fromROSMsg(*cloudMsg, *cCloud);
 
-        // pcl::PointCloud<pcl::PointXYZ>::Ptr rangeFilteredCloud(new pcl::PointCloud<pcl::PointXYZ>());
-        // filterPointCloud(cCloud, rangeFilteredCloud);
+        pcl::PointCloud<pcl::PointXYZ>::Ptr rangeFilteredCloud(new pcl::PointCloud<pcl::PointXYZ>());
+        filterPointCloud(cCloud, rangeFilteredCloud);
 
-        // pcl::VoxelGrid<pcl::PointXYZ> vg;
-        // vg.setInputCloud(cCloud);
-        // vg.setLeafSize(0.5f, 0.5f, 0.5f);
-        // pcl::PointCloud<pcl::PointXYZ>::Ptr filteredCloud(new pcl::PointCloud<pcl::PointXYZ>());
-        // vg.filter(*filteredCloud);
+        pcl::VoxelGrid<pcl::PointXYZ> vg;
+        vg.setInputCloud(rangeFilteredCloud);
+        vg.setLeafSize(0.5f, 0.5f, 0.5f);
+        pcl::PointCloud<pcl::PointXYZ>::Ptr filteredCloud(new pcl::PointCloud<pcl::PointXYZ>());
+        vg.filter(*filteredCloud);
 
-        // if (filteredCloud->empty()) {
-        //     RCLCPP_WARN(this->get_logger(), "Filtered cloud is empty after PassThrough.");
-        //     return;
-        // }
+        if (filteredCloud->empty()) {
+            RCLCPP_WARN(this->get_logger(), "Filtered cloud is empty after PassThrough.");
+            return;
+        }
 
         pcl::PointCloud<pcl::PointXYZI>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZI>());
-        for (const auto& point : cCloud->points) {
+        for (const auto& point : filteredCloud->points) {
             pcl::PointXYZI cvtCloud;
             cvtCloud.x = point.x;
             cvtCloud.y = point.y;

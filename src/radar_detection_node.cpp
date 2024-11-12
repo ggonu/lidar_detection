@@ -23,7 +23,7 @@
 
 class DetectionNode : public rclcpp::Node {
 public:
-    DetectionNode() : Node("detection_node") {
+    DetectionNode() : Node("radar_detection_node") {
         // ROS2 퍼블리셔 및 서브스크라이버 설정
         pub_clustered_cloud_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/dbscan/radar/clusters", 1);
         pub_markers_ = this->create_publisher<visualization_msgs::msg::MarkerArray>("/dbscan/radar/clusters/bboxes", 1);
@@ -64,52 +64,20 @@ private:
         bbox.scale.x = width;
         bbox.scale.y = length;
         bbox.scale.z = height;
-        bbox.color.r = 0.0f;
-        bbox.color.g = 1.0f;
+        bbox.color.r = 1.0f;
+        bbox.color.g = 0.0f;
         bbox.color.b = 0.0f;
         bbox.color.a = 0.5;
-        bbox.text = "Obstacle_" + std::to_string(id);
+        bbox.text = "Radar_Obstacle_" + std::to_string(id);
         return bbox;
-    }
-
-    void filterPointCloud(const pcl::PointCloud<pcl::PointXYZ>::Ptr& inputCloud, pcl::PointCloud<pcl::PointXYZ>::Ptr& filteredCloud) {
-        pcl::PassThrough<pcl::PointXYZ> pass;
-        pass.setInputCloud(inputCloud);
-        pass.setFilterFieldName("y");
-        pass.setFilterLimits(-7.0, 7.0);
-        pass.filter(*filteredCloud);
-
-        pass.setInputCloud(filteredCloud);
-        pass.setFilterFieldName("x");
-        pass.setFilterLimits(-5.0, 50.0);
-        pass.filter(*filteredCloud);
-
-        pass.setInputCloud(filteredCloud);
-        pass.setFilterFieldName("z");
-        pass.setFilterLimits(-2.3, 3.0);
-        pass.filter(*filteredCloud);
     }
 
     void cloudCallback(const sensor_msgs::msg::PointCloud2::SharedPtr cloudMsg) {
         pcl::PointCloud<pcl::PointXYZ>::Ptr cCloud(new pcl::PointCloud<pcl::PointXYZ>());
         pcl::fromROSMsg(*cloudMsg, *cCloud);
 
-        pcl::PointCloud<pcl::PointXYZ>::Ptr rangeFilteredCloud(new pcl::PointCloud<pcl::PointXYZ>());
-        filterPointCloud(cCloud, rangeFilteredCloud);
-
-        pcl::VoxelGrid<pcl::PointXYZ> vg;
-        vg.setInputCloud(rangeFilteredCloud);
-        vg.setLeafSize(0.5f, 0.5f, 0.5f);
-        pcl::PointCloud<pcl::PointXYZ>::Ptr filteredCloud(new pcl::PointCloud<pcl::PointXYZ>());
-        vg.filter(*filteredCloud);
-
-        if (filteredCloud->empty()) {
-            RCLCPP_WARN(this->get_logger(), "Filtered cloud is empty after PassThrough.");
-            return;
-        }
-
         pcl::PointCloud<pcl::PointXYZI>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZI>());
-        for (const auto& point : filteredCloud->points) {
+        for (const auto& point : cCloud->points) {
             pcl::PointXYZI cvtCloud;
             cvtCloud.x = point.x;
             cvtCloud.y = point.y;
@@ -118,8 +86,8 @@ private:
             cloud->points.push_back(cvtCloud);
         }
 
-        float eps = 1.0;
-        int minPts = 8;
+        float eps = 0.5;
+        int minPts = 6;
 
         #ifdef TIMING
             auto tic = this->now();

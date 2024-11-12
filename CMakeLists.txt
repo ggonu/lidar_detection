@@ -35,7 +35,7 @@ add_executable(dbscan_detection_node src/dbscan_detection_node.cpp)
 ament_target_dependencies(dbscan_detection_node rclcpp sensor_msgs pcl_conversions PCL visualization_msgs)
 target_link_libraries(dbscan_detection_node dbscan_lib)
 
-add_executable(radar_detection_node src/dbscan_detection_node.cpp)
+add_executable(radar_detection_node src/radar_detection_node.cpp)
 ament_target_dependencies(radar_detection_node rclcpp sensor_msgs pcl_conversions PCL visualization_msgs)
 target_link_libraries(radar_detection_node dbscan_lib)
 
